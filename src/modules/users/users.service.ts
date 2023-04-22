@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { User } from "./models/user.model";
 import * as bcrypt from "bcrypt";
-import { CreateUserDTO, UpdateUserDTO } from "./dto";
+import { CreateUserDTO, UpdateUserDTO, UpdatePasswordDTO } from "./dto";
 import { Watchlist } from "../watchlist/models/watchlist.model";
+import { AppError } from "src/common/constants/errors";
 
 @Injectable()
 export class UsersService {
@@ -28,6 +29,18 @@ export class UsersService {
       throw new Error(e)
     }
   }
+
+  async findUserById(id: number): Promise<User> {
+    try {
+      return this.userRepository.findOne({ where: { id: id }, include: {
+          model: Watchlist,
+          required: false,
+        } });
+    }catch (e) {
+      throw new Error(e)
+    }
+  }
+
 
   async createUser(dto: CreateUserDTO): Promise<CreateUserDTO> {
     try {
@@ -65,6 +78,21 @@ export class UsersService {
       return dto
     }catch (e) {
       throw new Error(e)
+    }
+  }
+
+  async updatePassword (userId: number, dto: UpdatePasswordDTO): Promise<any> {
+    try {
+      const {password} = await this.findUserById(userId);
+      const currentPassword = await bcrypt.compare(dto.oldPassword, password);
+      if (!currentPassword) return new BadRequestException(AppError.WRONG_DATA);
+      const newPassword = await this.hashPassword(dto.newPassword);
+      const data = {
+        password: newPassword
+      };
+      return this.userRepository.update(dto, {where: {id: userId}});
+    }catch (e) {
+      throw new Error(e);
     }
   }
 

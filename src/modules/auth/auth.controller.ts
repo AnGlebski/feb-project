@@ -6,8 +6,7 @@ import { AuthUserResponse } from "./response";
 import { ApiResponse, ApiTags } from "@nestjs/swagger";
 import { UsersService } from "../users/users.service";
 import { JwtAuthGuard } from "src/guards/jwt-guard";
-import { request } from "http";
-
+import { BadRequestException } from "@nestjs/common";
 
 @Controller("auth")
 export class AuthController {
@@ -27,7 +26,7 @@ export class AuthController {
   @ApiTags('API')
   @ApiResponse({status: 200, type: AuthUserResponse})
   @Post("login")
-  login(@Body() dto: UserLoginDTO): Promise<AuthUserResponse> {
+  login(@Body() dto: UserLoginDTO): Promise<AuthUserResponse | BadRequestException> {
     return this.authService.loginUser(dto);
   }
 
@@ -36,6 +35,6 @@ export class AuthController {
   @Get('get-public-user-info')
   getPublicUserInfo(@Req() request) {
     const user = request.user
-    return this.userService.publicUser(user.email)
+    return this.userService.publicUser(user.email);
   }
 }
