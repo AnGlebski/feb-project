@@ -90,15 +90,15 @@ export class UsersService {
       const data = {
         password: newPassword
       };
-      return this.userRepository.update(dto, {where: {id: userId}});
+      return this.userRepository.update(data, {where: {id: userId}});
     }catch (e) {
       throw new Error(e);
     }
   }
 
-  async deleteUser (email: string): Promise<boolean> {
+  async deleteUser (id: number): Promise<boolean> {
     try {
-      await this.userRepository.destroy({where: {email}})
+      await this.userRepository.destroy({where: {id}})
       return true
     }catch (e) {
       throw new Error(e)
