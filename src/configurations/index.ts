@@ -7,4 +7,4 @@ export default () => ({
   db_host: process.env.DB_HOST,
   secret_jwt: process.env.SECRET,
   expire_jwt: process.env.EXPIRE_JWT
-})
+});

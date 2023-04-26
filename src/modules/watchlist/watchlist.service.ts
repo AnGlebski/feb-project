@@ -28,7 +28,7 @@ export class WatchlistService {
       throw new Error(e)
     }
   }
-  
+
   async deleteAsset (userId: number, assetId: string): Promise<boolean> {
     try {
       await this.watchlistRepository.destroy({where: {id: assetId, user: userId}})

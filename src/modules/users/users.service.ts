@@ -2,13 +2,19 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/sequelize";
 import { User } from "./models/user.model";
 import * as bcrypt from "bcrypt";
-import { CreateUserDTO, UpdateUserDTO, UpdatePasswordDTO } from "./dto";
+import { CreateUserDTO, UpdatePasswordDTO, UpdateUserDTO } from "./dto";
 import { Watchlist } from "../watchlist/models/watchlist.model";
-import { AppError } from "src/common/constants/errors";
+import { TokenService } from "../token/token.service";
+import { AuthUserResponse } from "../auth/response";
+import passport from "passport";
+import { AppError } from "../../common/constants/errors";
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel(User) private readonly userRepository: typeof User) {
+  constructor(
+    @InjectModel(User) private readonly userRepository: typeof User,
+    private readonly tokenService: TokenService
+  ) {
   }
 
   async hashPassword(password: string): Promise<string> {
@@ -32,7 +38,7 @@ export class UsersService {
 
   async findUserById(id: number): Promise<User> {
     try {
-      return this.userRepository.findOne({ where: { id: id }, include: {
+      return this.userRepository.findOne({ where: { id }, include: {
           model: Watchlist,
           required: false,
         } });
@@ -40,7 +46,6 @@ export class UsersService {
       throw new Error(e)
     }
   }
-
 
   async createUser(dto: CreateUserDTO): Promise<CreateUserDTO> {
     try {
@@ -57,9 +62,9 @@ export class UsersService {
     }
   }
 
-  async publicUser (email: string): Promise<User>{
+  async publicUser (email: string): Promise<AuthUserResponse>{
     try {
-      return await this.userRepository.findOne({
+      const user = await this.userRepository.findOne({
         where: {email},
         attributes: {exclude: ['password']},
         include: {
@@ -67,6 +72,8 @@ export class UsersService {
           required: false
         }
       })
+      const token = await this.tokenService.generateJwtToken(user)
+      return { user, token}
     }catch (e) {
       throw new Error(e)
     }
@@ -83,16 +90,16 @@ export class UsersService {
 
   async updatePassword (userId: number, dto: UpdatePasswordDTO): Promise<any> {
     try {
-      const {password} = await this.findUserById(userId);
-      const currentPassword = await bcrypt.compare(dto.oldPassword, password);
-      if (!currentPassword) return new BadRequestException(AppError.WRONG_DATA);
-      const newPassword = await this.hashPassword(dto.newPassword);
+      const {password} = await this.findUserById(userId)
+      const currentPassword = await bcrypt.compare(dto.oldPassword, password)
+      if (!currentPassword) return new BadRequestException(AppError.WRONG_DATA)
+      const newPassword = await this.hashPassword(dto.newPassword)
       const data = {
         password: newPassword
-      };
-      return this.userRepository.update(data, {where: {id: userId}});
+      }
+      return this.userRepository.update(data, {where: {id: userId}})
     }catch (e) {
-      throw new Error(e);
+      throw new Error(e)
     }
   }
 

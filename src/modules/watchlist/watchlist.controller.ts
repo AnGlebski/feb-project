@@ -36,4 +36,4 @@ export class WatchlistController {
     const {id} = request.user
     return this.watchlistService.deleteAsset(id, assetId)
   }
-} 
+}
